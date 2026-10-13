@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>امتحان الدراسات الاجتماعية - الصف الثالث الإعدادي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f3f4f6;
+            background-image: url('https://www.transparenttextures.com/patterns/cubes.png');
+        }
+        .map-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            background: white;
+        }
+        .map-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .map-marker {
+            position: absolute;
+            background-color: white;
+            border: 3px solid #1e3a8a;
+            color: #1e3a8a;
+            font-weight: bold;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .question-card {
+            transition: all 0.3s ease;
+        }
+        .question-card.correct {
+            border-color: #10b981;
+            background-color: #ecfdf5;
+        }
+        .question-card.wrong {
+            border-color: #ef4444;
+            background-color: #fef2f2;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+    </style>
+</head>
+<body class="text-gray-800 antialiased min-h-screen flex flex-col">
+
+    <div class="flex-grow flex flex-col items-center p-4 sm:p-6">
+        
+        <!-- Header -->
+        <header class="w-full max-w-5xl bg-white rounded-2xl shadow-lg p-6 mb-6 text-center border-t-8 border-blue-600">
+            <h1 class="text-2xl sm:text-3xl font-bold text-blue-900 mb-2">امتحان الدراسات الاجتماعية</h1>
+            <h2 class="text-xl text-gray-600 mb-1">الصف الثالث الإعدادي — الفصل الدراسي الأول</h2>
+            <p class="text-sm text-gray-500">محافظة القاهرة — مديرية التربية والتعليم</p>
+        </header>
+
+        <div id="login-screen" class="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 fade-in">
+            <div class="text-center mb-6">
+                <i class="fas fa-user-graduate text-5xl text-blue-500 mb-4"></i>
+                <h3 class="text-2xl font-bold text-gray-800">بيانات الطالب</h3>
+                <p class="text-gray-500 text-sm mt-2">يرجى إدخال بياناتك بشكل صحيح لبدء الاختبار.</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">الاسم الثلاثي:</label>
+                    <input type="text" id="student-name" placeholder="مثال: أحمد محمد علي" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition">
+                    <p id="name-error" class="text-red-500 text-xs mt-1 hidden">يجب إدخال الاسم الثلاثي (3 كلمات على الأقل).</p>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">الصف / الفصل:</label>
+                    <input type="text" id="student-class" placeholder="مثال: 3/أ" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition">
+                    <p id="class-error" class="text-red-500 text-xs mt-1 hidden">يرجى إدخال الصف.</p>
+                </div>
+                
+                <div class="bg-blue-50 p-4 rounded-lg mt-6">
+                    <ul class="text-sm text-blue-800 space-y-2 list-disc list-inside">
+                        <li>الزمن المخصص: <strong>30 ثانية لكل سؤال</strong></li>
+                        <li>الدرجة الكلية: <strong>40 درجة</strong></li>
+                        <li>اضغط على "تحقق" بعد كل إجابة.</li>
+                    </ul>
+                </div>
+
+                <button onclick="startExam()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 shadow-md mt-6 flex justify-center items-center gap-2">
+                    <span>بدء الاختبار</span>
+                    <i class="fas fa-play"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="exam-screen" class="w-full max-w-5xl hidden flex-col gap-6">
+            
+            <!-- Sticky Top Bar (Info & Timer) -->
+            <div class="sticky top-0 z-50 bg-white/90 backdrop-blur-md shadow-md rounded-2xl p-4 flex flex-wrap justify-between items-center border border-gray-100">
+                <div class="flex items-center gap-4">
+                    <div class="bg-blue-100 p-2 rounded-full text-blue-600"><i class="fas fa-user"></i></div>
+                    <div>
+                        <p class="font-bold text-gray-800" id="display-name">الاسم</p>
+                        <p class="text-xs text-gray-500" id="display-class">الصف</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-6 mt-4 sm:mt-0">
+                    <div class="text-center border-l pl-4 border-gray-200">
+                        <p class="text-xs text-gray-500">سؤال</p>
+                        <p class="font-bold text-lg text-blue-600"><span id="q-progress">1 / 40</span></p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500">الدرجة</p>
+                        <p class="font-bold text-xl text-green-600"><span id="current-score">0</span> / 40</p>
+                    </div>
+                    <div id="timer-container" class="bg-red-50 px-4 py-2 rounded-lg border border-red-100 flex items-center gap-2 text-red-600 font-bold text-xl transition-colors">
+                        <i class="fas fa-clock"></i>
+                        <span id="timer">00:30</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Questions Container (Now holds one question) -->
+            <div id="questions-container" class="w-full space-y-8">
+                <!-- Single question will be injected here -->
+            </div>
+
+            <!-- Navigation Controls -->
+            <div class="flex justify-end mt-2">
+                 <button id="next-btn" onclick="nextQuestion()" class="hidden bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-8 rounded-lg transition shadow-md text-lg">
+                    السؤال التالي <i class="fas fa-arrow-left mr-2"></i>
+                 </button>
+            </div>
+        </div>
+
+        <div id="result-screen" class="w-full max-w-2xl bg-white rounded-2xl shadow-2xl p-8 hidden text-center fade-in border-t-8 border-green-500">
+            <i class="fas fa-check-circle text-7xl text-green-500 mb-4"></i>
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">تم إنهاء الاختبار بنجاح!</h2>
+            <p class="text-gray-600 mb-6" id="result-message"></p>
+            
+            <div class="bg-gray-50 rounded-xl p-6 mb-8 border border-gray-200">
+                <h3 class="text-gray-500 text-sm font-semibold uppercase tracking-wider mb-1">النتيجة النهائية</h3>
+                <p class="text-6xl font-black text-blue-600" id="final-score">0 <span class="text-2xl text-gray-400 font-normal">/ 40</span></p>
+                <div class="w-full bg-gray-200 rounded-full h-4 mt-4 overflow-hidden">
+                    <div id="score-bar" class="bg-green-500 h-4 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div id="sheet-status" class="mb-6 text-sm">
+                <!-- Status of saving to Google Sheets -->
+            </div>
+
+            <button onclick="location.reload()" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-8 rounded-lg transition shadow-md">
+                العودة للصفحة الرئيسية
+            </button>
+
+            <!-- Instructions for Teacher -->
+            <div class="mt-12 text-right bg-yellow-50 p-4 rounded-lg border border-yellow-200 text-xs text-gray-700">
+                <h4 class="font-bold text-yellow-800 mb-2"><i class="fas fa-info-circle"></i> للمعلم: لربط النتيجة بـ Google Sheets:</h4>
+                <ol class="list-decimal list-inside space-y-1">
+                    <li>افتح Google Sheets وقم بإنشاء ملف جديد.</li>
+                    <li>اذهب إلى الاضافات (Extensions) -> برمجة تطبيقات جوجل (Apps Script).</li>
+                    <li>انسخ الكود التالي والصقه هناك: <br><code class="block bg-white p-2 mt-1 rounded text-left dir-ltr text-xs text-gray-600">function doPost(e) { <br>&nbsp;&nbsp;var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet(); <br>&nbsp;&nbsp;var data = JSON.parse(e.postData.contents); <br>&nbsp;&nbsp;sheet.appendRow([new Date(), data.name, data.className, data.score]); <br>&nbsp;&nbsp;return ContentService.createTextOutput("Success"); <br>}</code></li>
+                    <li>اضغط على "نشر" (Deploy) -> "نشر جديد" (New deployment).</li>
+                    <li>اختر النوع "تطبيق ويب" (Web app)، الصلاحية "أي شخص" (Anyone).</li>
+                    <li>انسخ رابط الـ Webhook وضعه في متغير <code>GOOGLE_SHEETS_WEBHOOK_URL</code> في كود الـ JavaScript أسفل هذا الملف.</li>
+                </ol>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const QUESTION_TIME_SECONDS = 30;
+        // للمعلم: ضع رابط Webhook الخاص بجوجل شيت هنا
+        const GOOGLE_SHEETS_WEBHOOK_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEBHOOK_URL_HERE"; 
+
+        // --- State Variables ---
+        let student = { name: "", className: "" };
+        let questionTimerInterval;
+        let currentQuestionTime = QUESTION_TIME_SECONDS;
+        let currentScore = 0;
+        let flatQuestions = [];
+        let currentQuestionIndex = 0;
+
+        // --- Question Data (40 points total) ---
+        const examData = [
+            // القسم الأول: الجغرافيا الطبيعية (10 درجات) - الخريطة
+            {
+                section: "أولًا: الجغرافيا (20 درجة)",
+                subSection: "السؤال الأول: الوحدة الأولى — الجغرافيا الطبيعية للعالم (10 درجات)",
+                instructions: "(أ) تأمل الخريطة التخطيطية الآتية، ثم اكتب اسم القارة التي يشير إليها كل رقم:",
+                type: "map",
+                questions: [
+                    { id: "q1", text: "يشير الرقم (1) إلى قارة:", answer: "امريكا الشماليه", displayAnswer: "أمريكا الشمالية" },
+                    { id: "q2", text: "يشير الرقم (2) إلى قارة:", answer: "افريقيا", displayAnswer: "إفريقيا" },
+                    { id: "q3", text: "يشير الرقم (3) إلى قارة:", answer: "اسيا", displayAnswer: "آسيا" },
+                    { id: "q4", text: "يشير الرقم (4) إلى قارة:", answer: "امريكا الجنوبيه", displayAnswer: "أمريكا الجنوبية" },
+                    { id: "q5", text: "يشير الرقم (5) إلى قارة:", answer: "استراليا", displayAnswer: "أستراليا" }
+                ]
+            },
+            // القسم الأول - الاختيار من متعدد
+            {
+                subSection: "تابع السؤال الأول",
+                instructions: "(ب) اختر الإجابة الصحيحة مما بين القوسين:",
+                type: "mcq",
+                questions: [
+                    { id: "q6", text: "تقع هضبة الدكن في قارة ...", options: ["إفريقيا", "آسيا", "أوروبا", "أستراليا"], answer: "آسيا" },
+                    { id: "q7", text: "يصب نهر الدانوب في ...", options: ["البحر الأسود", "بحر الشمال", "البحر المتوسط", "بحر قزوين"], answer: "البحر الأسود" },
+                    { id: "q8", text: "من أشجار إقليم البحر المتوسط ...", options: ["الزيتون", "المطاط", "الصنوبر", "الماهوجني"], answer: "الزيتون" },
+                    { id: "q9", text: "تقع جبال روكي في غرب قارة ...", options: ["أمريكا الشمالية", "أمريكا الجنوبية", "آسيا", "أوروبا"], answer: "أمريكا الشمالية" },
+                    { id: "q10", text: "تنمو الطحالب في إقليم التندرا خلال ...", options: ["الصيف القصير", "الشتاء الطويل", "الربيع الدافئ", "الخريف الجاف"], answer: "الصيف القصير" }
+                ]
+            },
+            // القسم الثاني: جغرافية سكان العالم (10 درجات) - الإكمال
+            {
+                subSection: "السؤال الثاني: الوحدة الثانية — جغرافية سكان العالم (10 درجات)",
+                instructions: "(أ) أكمل العبارات الآتية بكلمات مناسبة:",
+                type: "text",
+                questions: [
+                    { id: "q11", text: "أكبر قارات العالم من حيث عدد السكان هي قارة:", answer: "اسيا", displayAnswer: "آسيا" },
+                    { id: "q12", text: "يتركز سكان أستراليا في السواحل الـ ................ للقارة:", answer: "الشرقيه", displayAnswer: "الشرقية (أو جنوب شرق)" }, // Adjusted to match typical curriculum context for "جنوب شرق" from the key, but the key says "جنوب شرق" 
+                    { id: "q13", text: "تقل الكثافة السكانية في سهول الأمازون بسبب كثافة:", answer: "الغابات الاستوائيه", displayAnswer: "الغابات الاستوائية" },
+                    { id: "q14", text: "تعد نسبة المتعلمين مؤشرًا على المستوى ................ للسكان:", answer: "التعليمي", displayAnswer: "التعليمي" },
+                    { id: "q15", text: "تشير زيادة عدد الأطباء بالنسبة للسكان إلى ارتفاع مستوى:", answer: "الرعايه الصحيه", displayAnswer: "الرعاية الصحية" }
+                ]
+            },
+            // القسم الثاني - أسئلة مقالية قصيرة
+            {
+                subSection: "تابع السؤال الثاني",
+                instructions: "(ب) أجب عما يأتي بإجابة قصيرة:",
+                type: "textarea",
+                questions: [
+                    { id: "q16", text: "بم تفسر: قلة السكان في المناطق الشمالية من آسيا؟", answer: "شده البروده", displayAnswer: "بسبب شدة البرودة" },
+                    { id: "q17", text: "ما النتيجة المترتبة على تساوي معدلات المواليد والوفيات؟", answer: "تصبح الزياده الطبيعيه صفرا", displayAnswer: "تصبح الزيادة الطبيعية صفرًا (ثبات عدد السكان)" },
+                    { id: "q18", text: "اذكر سببًا واحدًا لتركز السكان في السهول الفيضية.", answer: "خصوبه التربه", displayAnswer: "بسبب خصوبة التربة ووفرة المياه" },
+                    { id: "q19", text: "لماذا ترتفع نسبة كبار السن في الدول المتقدمة؟", answer: "تقدم الرعايه الصحيه", displayAnswer: "بسبب تقدم الرعاية الصحية والتعليمية" },
+                    { id: "q20", text: "ما النشاط الاقتصادي الذي تعتمد عليه غالبًا الدول ذات الدخل المنخفض؟", answer: "الزراعه", displayAnswer: "النشاط الزراعي" }
+                ]
+            },
+            // القسم الثالث: التاريخ (10 درجات) - الاختيار من متعدد
+            {
+                section: "ثانيًا: التاريخ (20 درجة)",
+                subSection: "السؤال الثالث: الوحدة الثالثة — مصر تحت الحكم العثماني ومحمد علي (10 درجات)",
+                instructions: "(أ) اختر الإجابة الصحيحة مما بين القوسين:",
+                type: "mcq",
+                questions: [
+                    { id: "q21", text: "أصبحت مصر ولاية عثمانية بعد معركة ...", options: ["الريدانية", "مرج دابق", "أبي قير", "كفر الدوار"], answer: "الريدانية" },
+                    { id: "q22", text: "أبحرت الحملة الفرنسية إلى مصر من ميناء ...", options: ["طولون", "الإسكندرية", "بورسعيد", "السويس"], answer: "طولون" },
+                    { id: "q23", text: "تولى قيادة الحملة الفرنسية بعد كليبر ...", options: ["مينو", "نابليون", "نلسون", "فريزر"], answer: "مينو" },
+                    { id: "q24", text: "قرر زعماء الشعب تعيين محمد علي واليًا عام ...", options: ["1805م", "1798م", "1807م", "1882م"], answer: "1805م" },
+                    { id: "q25", text: "أنشأ محمد علي المطبعة الأميرية في ...", options: ["بولاق", "رشيد", "دمياط", "أسوان"], answer: "بولاق" }
+                ]
+            },
+            // القسم الثالث - اكتب ما تدل عليه العبارة
+            {
+                subSection: "تابع السؤال الثالث",
+                instructions: "(ب) اكتب ما تدل عليه كل عبارة:",
+                type: "text",
+                questions: [
+                    { id: "q26", text: "نظام اقتصادي طبقه محمد علي ليدخل سوق التجارة الدولية منافسًا غيره.", answer: "الاحتكار", displayAnswer: "نظام الاحتكار" },
+                    { id: "q27", text: "معركة هُزم فيها الأسطول الفرنسي أمام الأسطول الإنجليزي.", answer: "ابي قير البحريه", displayAnswer: "معركة أبي قير البحرية" },
+                    { id: "q28", text: "زعيم شعبي نفاه محمد علي إلى دمياط.", answer: "عمر مكرم", displayAnswer: "السيد عمر مكرم" },
+                    { id: "q29", text: "اتفاقية عقدها كليبر مع الدولة العثمانية لخروج الحملة الفرنسية.", answer: "اتفاقيه العريش", displayAnswer: "اتفاقية العريش" },
+                    { id: "q30", text: "موقعة تخلص فيها محمد علي من المماليك وانفرد بالحكم.", answer: "مذبحه القلعه", displayAnswer: "مذبحة القلعة" }
+                ]
+            },
+            // القسم الرابع: التاريخ (10 درجات) - الإكمال
+            {
+                subSection: "السؤال الرابع: الوحدة الرابعة — مصر والحركة الوطنية (10 درجات)",
+                instructions: "(أ) أكمل العبارات الآتية:",
+                type: "text",
+                questions: [
+                    { id: "q31", text: "أُغلقت معظم المدارس والمصانع في عهد:", answer: "عباس باشا الاول", displayAnswer: "عباس باشا الأول (أو عباس الأول)" },
+                    { id: "q32", text: "تولى رئاسة الحزب الوطني بعد مصطفى كامل:", answer: "محمد فريد", displayAnswer: "محمد فريد" },
+                    { id: "q33", text: "نُفي سعد زغلول في المرة الأولى إلى جزيرة:", answer: "مالطه", displayAnswer: "مالطة" },
+                    { id: "q34", text: "ألغى دستور 1923م ووضع دستور 1930م رئيس الوزراء:", answer: "اسماعيل صدقي", displayAnswer: "إسماعيل صدقي" },
+                    { id: "q35", text: "عقد مصطفى النحاس معاهدة 1936م مع دولة:", answer: "بريطانيا", displayAnswer: "بريطانيا (أو إنجلترا)" }
+                ]
+            },
+             // القسم الرابع - أسئلة مقالية قصيرة
+            {
+                subSection: "تابع السؤال الرابع",
+                instructions: "(ب) أجب عن الأسئلة الآتية:",
+                type: "textarea",
+                questions: [
+                    { id: "q36", text: "ما نتيجة معركة كفر الدوار بالنسبة للقوات العرابية؟", answer: "صد هجمات", displayAnswer: "صد هجمات القوات البريطانية" },
+                    { id: "q37", text: "بم تفسر: توسع الاحتلال البريطاني في زراعة القطن بمصر؟", answer: "مصانع", displayAnswer: "لخدمة مصانع بريطانيا وتوفير المادة الخام" },
+                    { id: "q38", text: "من صاحب السلطة الفعلية في مصر بعد الاحتلال البريطاني عام 1882م؟", answer: "المعتمد البريطاني", displayAnswer: "المعتمد البريطاني" },
+                    { id: "q39", text: "اذكر مطلبًا واحدًا للوفد المصري بعد الحرب العالمية الأولى.", answer: "الغاء الحمايه", displayAnswer: "إلغاء الحماية البريطانية" },
+                    { id: "q40", text: "ما التغيير الذي طرأ على لقب حاكم مصر بعد تصريح 28 فبراير 1922م؟", answer: "ملك", displayAnswer: "تحوّل لقب الحاكم من سلطان إلى ملك" }
+                ]
+            }
+        ];
+
+        // Object to store user interactions: { q1: { attempts: 0, solved: false }, ... }
+        let questionStates = {};
+
+        // --- STREAMING_CHUNK:Initialization and Utility Functions ---
+        
+        function normalizeText(text) {
+            if (!text) return "";
+            return text.trim()
+                .replace(/[أإآ]/g, 'ا')
+                .replace(/ة/g, 'ه')
+                .replace(/ى/g, 'ي')
+                .replace(/\s+/g, ' ')
+                .toLowerCase();
+        }
+
+        // Initialize question states
+        examData.forEach(section => {
+            section.questions.forEach(q => {
+                questionStates[q.id] = { attempts: 0, solved: false };
+            });
+        });
+
+        // --- STREAMING_CHUNK:Authentication / Login Logic ---
+
+        function startExam() {
+            const nameInput = document.getElementById('student-name').value.trim();
+            const classInput = document.getElementById('student-class').value.trim();
+            
+            let valid = true;
+            
+            // Check if name has at least 3 words
+            if (nameInput.split(' ').length < 3) {
+                document.getElementById('name-error').classList.remove('hidden');
+                valid = false;
+            } else {
+                document.getElementById('name-error').classList.add('hidden');
+            }
+
+            if (classInput === '') {
+                document.getElementById('class-error').classList.remove('hidden');
+                valid = false;
+            } else {
+                document.getElementById('class-error').classList.add('hidden');
+            }
+
+            if (valid) {
+                student.name = nameInput;
+                student.className = classInput;
+                
+                // Update UI
+                document.getElementById('display-name').innerText = student.name;
+                document.getElementById('display-class').innerText = `الصف: ${student.className}`;
+                
+                // Flatten questions for one-by-one display
+                flatQuestions = [];
+                examData.forEach(sectionGroup => {
+                    sectionGroup.questions.forEach(q => {
+                        flatQuestions.push({
+                            ...q,
+                            sectionTitle: sectionGroup.section,
+                            subSectionTitle: sectionGroup.subSection,
+                            instructions: sectionGroup.instructions,
+                            type: sectionGroup.type
+                        });
+                    });
+                });
+
+                // Switch Screens
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('exam-screen').classList.remove('hidden');
+                document.getElementById('exam-screen').classList.add('flex');
+                
+                renderCurrentQuestion();
+            }
+        }
+
+        // --- STREAMING_CHUNK:Timer Logic ---
+
+        function startQuestionTimer() {
+            clearInterval(questionTimerInterval);
+            currentQuestionTime = QUESTION_TIME_SECONDS;
+            updateTimerUI();
+            
+            const timerContainer = document.getElementById('timer-container');
+            timerContainer.classList.remove('bg-red-600', 'text-white', 'animate-pulse');
+            timerContainer.classList.add('bg-red-50', 'text-red-600');
+
+            questionTimerInterval = setInterval(() => {
+                currentQuestionTime--;
+                updateTimerUI();
+
+                // Warning colors
+                if (currentQuestionTime <= 10 && currentQuestionTime > 0) {
+                    timerContainer.classList.remove('bg-red-50', 'text-red-600');
+                    timerContainer.classList.add('bg-red-600', 'text-white', 'animate-pulse');
+                }
+
+                if (currentQuestionTime <= 0) {
+                    clearInterval(questionTimerInterval);
+                    handleTimeOut();
+                }
+            }, 1000);
+        }
+
+        function updateTimerUI() {
+            const timerDisplay = document.getElementById('timer');
+            let seconds = currentQuestionTime < 10 ? "0" + currentQuestionTime : currentQuestionTime;
+            timerDisplay.innerText = `00:${seconds}`;
+        }
+
+        function handleTimeOut() {
+            const q = flatQuestions[currentQuestionIndex];
+            const qId = q.id;
+            
+            if (!questionStates[qId].solved) {
+                questionStates[qId].solved = true;
+                
+                // Lock inputs
+                const inputEl = document.getElementById(`input-${qId}`);
+                const btnEl = document.getElementById(`btn-${qId}`);
+                if(inputEl) {
+                    inputEl.disabled = true;
+                    inputEl.classList.add('bg-gray-100', 'cursor-not-allowed');
+                }
+                if(btnEl) {
+                    btnEl.disabled = true;
+                    btnEl.classList.replace('bg-blue-500', 'bg-gray-400');
+                    btnEl.classList.remove('hover:bg-blue-600');
+                    btnEl.innerHTML = `<i class="fas fa-times"></i>`;
+                }
+
+                // Show timeout message and answer
+                const cardEl = document.getElementById(`card-${qId}`);
+                const feedbackEl = document.getElementById(`feedback-${qId}`);
+                const msgEl = document.getElementById(`msg-${qId}`);
+                
+                cardEl.classList.add('wrong');
+                feedbackEl.classList.remove('hidden');
+                feedbackEl.className = "mt-3 rounded-lg p-3 text-sm flex flex-col gap-1 bg-red-100 text-red-800";
+                msgEl.innerHTML = `
+                    <div><i class="fas fa-clock mr-1 text-red-600"></i> انتهى الوقت المخصص للسؤال!</div>
+                    <div class="mt-1 text-gray-700 bg-white/50 p-2 rounded">الإجابة الصحيحة هي: <strong class="text-green-700">${q.displayAnswer || q.answer}</strong></div>
+                `;
+
+                showNextButton();
+            }
+        }
+
+        // --- STREAMING_CHUNK:Rendering the Exam ---
+
+        function renderCurrentQuestion() {
+            const container = document.getElementById('questions-container');
+            container.innerHTML = '';
+            document.getElementById('next-btn').classList.add('hidden');
+
+            const q = flatQuestions[currentQuestionIndex];
+            
+            // Update Progress
+            document.getElementById('q-progress').innerText = `${currentQuestionIndex + 1} / ${flatQuestions.length}`;
+
+            let html = `<div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden fade-in">`;
+            
+            // Section Title (if exists on this question)
+            if (q.sectionTitle) {
+                html += `<div class="bg-blue-800 text-white p-4">
+                            <h2 class="text-xl font-bold">${q.sectionTitle}</h2>
+                         </div>`;
+            }
+
+            html += `<div class="p-6">
+                        <h3 class="text-lg font-bold text-gray-800 border-b border-gray-200 pb-2 mb-4">${q.subSectionTitle}</h3>
+                        <p class="text-blue-600 font-semibold mb-6"><i class="fas fa-edit mr-2"></i> ${q.instructions}</p>`;
+
+            // Check if this is a map question
+            if (q.type === 'map') {
+                html += `
+                    <div class="map-container mb-8">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/8/80/World_map_-_low_resolution.svg" alt="خريطة العالم">
+                        <div class="map-marker" style="top: 30%; left: 20%;">1</div>
+                        <div class="map-marker" style="top: 55%; left: 52%;">2</div>
+                        <div class="map-marker" style="top: 30%; left: 75%;">3</div>
+                        <div class="map-marker" style="top: 70%; left: 30%;">4</div>
+                        <div class="map-marker" style="top: 75%; left: 85%;">5</div>
+                    </div>
+                `;
+            }
+
+            html += `<div class="space-y-6">
+                        <div id="card-${q.id}" class="question-card border border-gray-200 rounded-xl p-5 bg-gray-50">
+                            <div class="flex items-start gap-3">
+                                <span class="bg-blue-100 text-blue-800 font-bold w-8 h-8 flex items-center justify-center rounded-full shrink-0">${currentQuestionIndex + 1}</span>
+                                <div class="w-full">
+                                    <p class="text-gray-800 font-semibold mb-3 text-lg">${q.text}</p>
+                                    
+                                    <div class="flex flex-col sm:flex-row gap-3 items-center">
+            `;
+
+            // Input generation
+            if (q.type === 'mcq') {
+                html += `<select id="input-${q.id}" class="w-full sm:w-2/3 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="" disabled selected>اختر الإجابة...</option>`;
+                q.options.forEach(opt => {
+                    html += `<option value="${opt}">${opt}</option>`;
+                });
+                html += `</select>`;
+            } else if (q.type === 'textarea') {
+                html += `<input type="text" id="input-${q.id}" placeholder="اكتب إجابتك هنا..." class="w-full sm:w-2/3 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" onkeypress="handleEnter(event, '${q.id}', '${q.type}')">`;
+            } else {
+                html += `<input type="text" id="input-${q.id}" placeholder="الإجابة..." class="w-full sm:w-2/3 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" onkeypress="handleEnter(event, '${q.id}', '${q.type}')">`;
+            }
+
+            html += `
+                                        <button id="btn-${q.id}" onclick="checkAnswer('${q.id}', '${q.type}')" class="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg transition whitespace-nowrap">
+                                            تحقق <i class="fas fa-check mr-1"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Feedback Area -->
+                                    <div id="feedback-${q.id}" class="mt-3 hidden rounded-lg p-3 text-sm font-semibold flex items-center justify-between">
+                                        <span id="msg-${q.id}"></span>
+                                        <span class="text-xs text-gray-500 bg-white/50 px-2 py-1 rounded">محاولات: <span id="attempts-${q.id}">0</span>/3</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div></div></div>`;
+            
+            container.innerHTML = html;
+            
+            // Focus input automatically
+            const inputEl = document.getElementById(`input-${q.id}`);
+            if (inputEl && q.type !== 'mcq') {
+                setTimeout(() => inputEl.focus(), 100);
+            }
+
+            // Start Timer for this question
+            startQuestionTimer();
+        }
+
+        function handleEnter(e, qId, type) {
+            if (e.key === 'Enter') {
+                checkAnswer(qId, type);
+            }
+        }
+
+        // --- STREAMING_CHUNK:Checking Answers Logic ---
+
+        function checkAnswer(qId, type) {
+            if (questionStates[qId].solved) return;
+
+            const qData = flatQuestions.find(q => q.id === qId);
+            const inputEl = document.getElementById(`input-${qId}`);
+            let userAnswer = inputEl.value;
+
+            if (!userAnswer || userAnswer.trim() === "") {
+                const feedbackEl = document.getElementById(`feedback-${qId}`);
+                const msgEl = document.getElementById(`msg-${qId}`);
+                feedbackEl.classList.remove('hidden');
+                feedbackEl.className = "mt-3 rounded-lg p-3 text-sm font-bold flex items-center justify-between bg-yellow-100 text-yellow-800";
+                msgEl.innerHTML = `<i class="fas fa-info-circle mr-1"></i> الرجاء إدخال إجابة.`;
+                return;
+            }
+
+            questionStates[qId].attempts += 1;
+            document.getElementById(`attempts-${qId}`).innerText = questionStates[qId].attempts;
+
+            let isCorrect = false;
+
+            if (type === 'mcq') {
+                isCorrect = (userAnswer === qData.answer);
+            } else if (type === 'textarea') {
+                const normUser = normalizeText(userAnswer);
+                const normExpected = normalizeText(qData.answer);
+                
+                if (normUser.includes(normExpected) || (normExpected.includes(normUser) && normUser.length > 4)) {
+                    isCorrect = true;
+                }
+                if (qId === "q39" && (normUser.includes("رقابه") || normUser.includes("سفر") || normUser.includes("احكام عرفيه"))) isCorrect = true;
+                if (qId === "q12" && normUser.includes("شرق")) isCorrect = true;
+                if (qId === "q31" && normUser.includes("عباس")) isCorrect = true;
+            } else {
+                isCorrect = (normalizeText(userAnswer) === normalizeText(qData.answer));
+            }
+
+            const cardEl = document.getElementById(`card-${qId}`);
+            const feedbackEl = document.getElementById(`feedback-${qId}`);
+            const msgEl = document.getElementById(`msg-${qId}`);
+            const btnEl = document.getElementById(`btn-${qId}`);
+
+            feedbackEl.classList.remove('hidden');
+
+            if (isCorrect) {
+                questionStates[qId].solved = true;
+                clearInterval(questionTimerInterval); // Stop timer
+                
+                currentScore += 1;
+                document.getElementById('current-score').innerText = currentScore;
+                
+                cardEl.classList.add('correct');
+                cardEl.classList.remove('wrong');
+                
+                inputEl.disabled = true;
+                inputEl.classList.add('bg-gray-100', 'cursor-not-allowed');
+                
+                btnEl.disabled = true;
+                btnEl.classList.replace('bg-blue-500', 'bg-green-500');
+                btnEl.classList.replace('hover:bg-blue-600', 'hover:bg-green-600');
+                btnEl.innerHTML = `<i class="fas fa-check-double"></i>`;
+                
+                feedbackEl.className = "mt-3 rounded-lg p-3 text-sm font-bold flex items-center justify-between bg-green-100 text-green-800";
+                msgEl.innerHTML = `<i class="fas fa-check-circle mr-1"></i> إجابة صحيحة!`;
+
+                showNextButton();
+
+            } else {
+                cardEl.classList.add('wrong');
+                
+                if (questionStates[qId].attempts >= 3) {
+                    questionStates[qId].solved = true; 
+                    clearInterval(questionTimerInterval); // Stop timer
+                    
+                    inputEl.disabled = true;
+                    btnEl.disabled = true;
+                    btnEl.classList.replace('bg-blue-500', 'bg-gray-400');
+                    btnEl.classList.remove('hover:bg-blue-600');
+                    btnEl.innerHTML = `<i class="fas fa-times"></i>`;
+
+                    feedbackEl.className = "mt-3 rounded-lg p-3 text-sm flex flex-col gap-1 bg-red-100 text-red-800";
+                    msgEl.innerHTML = `
+                        <div><i class="fas fa-times-circle mr-1 text-red-600"></i> استنفدت المحاولات.</div>
+                        <div class="mt-1 text-gray-700 bg-white/50 p-2 rounded">الإجابة الصحيحة هي: <strong class="text-green-700">${qData.displayAnswer || qData.answer}</strong></div>
+                    `;
+
+                    showNextButton();
+                } else {
+                    feedbackEl.className = "mt-3 rounded-lg p-3 text-sm font-bold flex items-center justify-between bg-red-100 text-red-800";
+                    msgEl.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i> إجابة خاطئة، حاول مرة أخرى.`;
+                }
+            }
+        }
+
+        function showNextButton() {
+            const nextBtn = document.getElementById('next-btn');
+            nextBtn.classList.remove('hidden');
+            
+            // If it's the last question, change button text
+            if (currentQuestionIndex === flatQuestions.length - 1) {
+                nextBtn.innerHTML = `إنهاء الاختبار وتسليم النتيجة <i class="fas fa-flag-checkered mr-2"></i>`;
+                nextBtn.classList.replace('bg-gray-800', 'bg-green-600');
+                nextBtn.classList.replace('hover:bg-gray-900', 'hover:bg-green-700');
+            }
+            
+            nextBtn.focus();
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < flatQuestions.length - 1) {
+                currentQuestionIndex++;
+                renderCurrentQuestion();
+            } else {
+                finishExam();
+            }
+        }
+
+        // --- STREAMING_CHUNK:Finishing the Exam and Google Sheets Integration ---
+
+        function finishExam() {
+            clearInterval(questionTimerInterval);
+            
+            // Calculate final score based on solved & correct
+            document.getElementById('final-score').innerHTML = `${currentScore} <span class="text-2xl text-gray-400 font-normal">/ 40</span>`;
+            
+            // Calculate Percentage and animate bar
+            const percentage = (currentScore / 40) * 100;
+            setTimeout(() => {
+                const bar = document.getElementById('score-bar');
+                bar.style.width = `${percentage}%`;
+                if(percentage < 50) bar.classList.replace('bg-green-500', 'bg-red-500');
+                else if (percentage < 75) bar.classList.replace('bg-green-500', 'bg-yellow-500');
+            }, 500);
+
+            // Message logic
+            let msg = "";
+            if (percentage >= 85) msg = "ممتاز! عمل رائع ومجهود متميز.";
+            else if (percentage >= 65) msg = "جيد جداً، يمكنك تحقيق الأفضل في المرة القادمة.";
+            else if (percentage >= 50) msg = "نجاح، ولكن تحتاج إلى المزيد من المذاكرة.";
+            else msg = "للأسف لم تتجاوز الاختبار، يجب مراجعة الدروس جيداً.";
+            
+            document.getElementById('result-message').innerText = msg;
+
+            // Switch Screens
+            document.getElementById('exam-screen').classList.add('hidden');
+            document.getElementById('exam-screen').classList.remove('flex');
+            document.getElementById('result-screen').classList.remove('hidden');
+
+            // Save to Google Sheets
+            sendDataToGoogleSheets();
+        }
+
+        function sendDataToGoogleSheets() {
+            const statusDiv = document.getElementById('sheet-status');
+            
+            if (GOOGLE_SHEETS_WEBHOOK_URL === "YOUR_GOOGLE_APPS_SCRIPT_WEBHOOK_URL_HERE") {
+                statusDiv.innerHTML = `<div class="bg-yellow-100 text-yellow-800 p-3 rounded-lg"><i class="fas fa-exclamation-triangle"></i> لم يتم إعداد ربط Google Sheets. النتيجة محفوظة محلياً فقط. (انظر التعليمات بالأسفل)</div>`;
+                return;
+            }
+
+            statusDiv.innerHTML = `<div class="text-blue-600"><i class="fas fa-spinner fa-spin"></i> جاري إرسال النتيجة إلى المعلم...</div>`;
+
+            const payload = {
+                name: student.name,
+                className: student.className,
+                score: `${currentScore}/40`,
+                timestamp: new Date().toISOString()
+            };
+
+            fetch(GOOGLE_SHEETS_WEBHOOK_URL, {
+                method: 'POST',
+                mode: 'no-cors', // standard for simple web apps submitting to Google script
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(() => {
+                statusDiv.innerHTML = `<div class="bg-green-100 text-green-800 p-3 rounded-lg"><i class="fas fa-check-double"></i> تم إرسال النتيجة للمعلم بنجاح.</div>`;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                statusDiv.innerHTML = `<div class="bg-red-100 text-red-800 p-3 rounded-lg"><i class="fas fa-times"></i> حدث خطأ أثناء إرسال النتيجة. يرجى تصوير الشاشة وإرسالها للمعلم.</div>`;
+            });
+        }
+    </script>
+</body>
+</html>
